@@ -10,7 +10,7 @@ import torch.nn as nn
 from absl import app, flags
 
 # from sklearn.utils import shuffle
-from torch_geometric.loader import DataLoader as batchLoader
+from torch_geometric.loader import DataLoader
 
 from . import data, network
 
@@ -136,11 +136,11 @@ def main(_):
         Dataset[trainSetLength : trainSetLength + validSetLength],
         Dataset[trainSetLength + validSetLength :],
     )
-    trainLoader = batchLoader(
+    trainLoader = DataLoader(
         trainSet, batch_size=FLAGS.batch_size, shuffle=FLAGS.shuffleBatch
     )
-    validLoader = batchLoader(validSet, batch_size=len(validSet), shuffle=False)
-    testLoader = batchLoader(testSet, batch_size=len(testSet), shuffle=False)
+    validLoader = DataLoader(validSet, batch_size=len(validSet), shuffle=False)
+    testLoader = DataLoader(testSet, batch_size=len(testSet), shuffle=False)
     print(f"Dataset length {trainSetLength,validSetLength,testSetLength}.")
 
     modelPara["oDim"] = FLAGS.Cout * nClass

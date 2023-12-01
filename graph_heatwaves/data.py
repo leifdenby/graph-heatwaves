@@ -1,4 +1,3 @@
-from glob import glob
 from pathlib import Path
 
 import numpy as np
@@ -9,21 +8,16 @@ from scipy.io import loadmat
 # from sklearn import neighbors as nb
 from torch_geometric.data import Data
 
-# Global Vars
-path = "./datapackage/"
-filePath = glob(path + "*.mat")
-filePath.sort()
-
 DATA_ROOT = Path(__file__).parent.parent / "datapackage"
 
 
 # Util functions
-def MinMaxNorm(x, min, max):
-    return (x - min) / (max - min)
+def MinMaxNorm(x, v_min, v_max):
+    return (x - v_min) / (v_max - v_min)
 
 
-def deNormMinMax(x, min, max):
-    return x * (max - min) + min
+def deNormMinMax(x, v_min, v_max):
+    return x * (v_max - v_min) + v_min
 
 
 def MeanStdNorm(x, mean, std):
@@ -123,7 +117,8 @@ class FTGenerator(object):
 
     def _constructRawData(self):
         _location, _raw = [], []
-        for _path in filePath:
+        file_paths = sorted(list(DATA_ROOT.glob("*.mat")))
+        for _path in file_paths:
             _loc, _feat = loadData(_path)
             _location.append(_loc)
             _raw.append(_feat)
