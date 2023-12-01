@@ -1,6 +1,7 @@
 import os
 import pickle
 import time
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -13,6 +14,8 @@ from absl import app, flags
 from torch_geometric.loader import DataLoader
 
 from . import data, network
+
+DATAROOT_TRAINED_MODELS = Path(__file__).parent.parent / "trained_model"
 
 flags.DEFINE_integer("num_steps", int(1000), help="Number of steps of training.")
 flags.DEFINE_string("AF", "PReLUMulti", help="Choice of activation function.")
@@ -107,11 +110,12 @@ def main(_):
         "graphCorrIdx": FLAGS.graphCorrIdx,
         "thres": FLAGS.thres,
     }
+    DATAROOT_TRAINED_MODELS.mkdir(parents=True, exist_ok=True)
 
-    modelPath = f"./trainedModel/{FLAGS.modelName}.pt"
-    metaPath = f"./trainedModel/{FLAGS.modelName}_metadata.pkl"
-    paraPath = f"./trainedModel/{FLAGS.modelName}_para.pkl"
-    checkpointPath = "./checkpoint.pt"
+    modelPath = DATAROOT_TRAINED_MODELS / f".{FLAGS.modelName}.pt"
+    metaPath = DATAROOT_TRAINED_MODELS / f"{FLAGS.modelName}_metadata.pkl"
+    paraPath = DATAROOT_TRAINED_MODELS / f"{FLAGS.modelName}_para.pkl"
+    checkpointPath = DATAROOT_TRAINED_MODELS / "checkpoint.pt"
     # ----------------------------- Load all datasets -----------------------------#
     metadata = None
     if os.path.exists(metaPath):

@@ -1,3 +1,6 @@
 datapackage/
 .pdm-python
 __pycache__/
+results.pkl
+log
+trained_model/

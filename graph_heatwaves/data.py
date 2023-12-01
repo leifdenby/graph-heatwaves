@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch_geometric.utils as utils
+from loguru import logger
 from scipy.io import loadmat
 
 # from sklearn import neighbors as nb
@@ -29,22 +30,40 @@ def deNormMeanStd(x, mean, std):
 
 
 def loadData(dir):
+    """
+    Load station data from .mat file
+
+    Args:
+        dir: path to .mat file
+
+    Returns:
+        location_vec: [longitude, latitude] of the station, shape [2]
+        features_vec: full features-timeseries matrix, shape [nFeatures, nTimeSteps]
+
+    """
     _data = loadmat(dir)
     _location = [_data["StationLon"].squeeze(), _data["StationLat"].squeeze()]
-    # _feature = _data['Temperature']
+    features_to_use = [
+        "HWFlag2",
+        "Tmax",
+        "Tref",
+        "Temp",
+        "Tmin",
+        "Tdew",
+        "Wind",
+        "Prcp",
+        "PA",
+        "Psea",
+        "DOY",
+    ]
     _feature = []
-    _feature.append(_data["HWFlag2"].flatten())
-    _feature.append(_data["Tmax"].squeeze())
-    _feature.append(_data["Tref"].squeeze())
-    _feature.append(_data["Temp"].squeeze())
-    _feature.append(_data["Tmin"].squeeze())
-    _feature.append(_data["Tdew"].squeeze())
-    _feature.append(_data["Wind"].squeeze())
-    _feature.append(_data["Prcp"].squeeze())
-    _feature.append(_data["PA"].squeeze())
-    _feature.append(_data["Psea"].squeeze())
-    _feature.append(_data["DOY"].squeeze())
-    return np.array(_location), np.array(_feature)
+    for feature in features_to_use:
+        _feature.append(_data[feature].squeeze())
+
+    location_vec = np.array(_location)
+    features_vec = np.array(_feature)
+
+    return location_vec, features_vec
 
 
 def loadONI(dir):
@@ -116,34 +135,45 @@ class FTGenerator(object):
         self.nClass = self.metadata["nClass"]
 
     def _constructRawData(self):
-        _location, _raw = [], []
+        all_locations, all_features = [], []
         file_paths = sorted(list(DATA_ROOT.glob("*.mat")))
         for _path in file_paths:
-            _loc, _feat = loadData(_path)
-            _location.append(_loc)
-            _raw.append(_feat)
-        _raw, _location = np.array(_raw), np.array(_location)
-        _raw = np.transpose(np.array(_raw), (2, 0, 1))
+            station_loc, station_features = loadData(_path)
+            all_locations.append(station_loc)
+            all_features.append(station_features)
+        all_features, all_locations = np.array(all_features), np.array(all_locations)
 
-        # Adding station locations as features
-        _nSteps, _nNodes, _nFeatures = _raw.shape
+        # reshape [nStations, nFeatures, nTimeSteps] to [nTimeSteps, nStations, nFeatures]
+        all_features = np.transpose(np.array(all_features), (2, 0, 1))
+
+        print("all_features.shape: ", all_features.shape)
+
+        # Adding station locations as features (i.e. lo>ngitude and latitude are added
+        # as feature values for each timestep as values that don't change with time)
+        _nSteps, _nNodes, _nFeatures = all_features.shape
         _rawNew = np.zeros((_nSteps, _nNodes, _nFeatures + 2))
-        _rawNew[:, :, :_nFeatures] = _raw.copy()
-        _rawNew[:, :, _nFeatures:] = _location.copy()
-        _raw = _rawNew.copy()
+        _rawNew[:, :, :_nFeatures] = all_features.copy()
+        _rawNew[:, :, _nFeatures:] = all_locations.copy()
+        all_features = _rawNew.copy()
+
+        logger.debug("all_features.shape: ", all_features.shape)
 
         # Adding ONI as a global influence feature
-        _oni = loadONI(DATA_ROOT / "ONI.mat")
-        _nSteps, _nNodes, _nFeatures = _raw.shape
+        # _oni = loadONI(DATA_ROOT / "ONI.mat")
+        _nSteps, _nNodes, _nFeatures = all_features.shape
         _rawNew = np.zeros((_nSteps, _nNodes, _nFeatures + 1))
-        _rawNew[:, :, :-1] = _raw.copy()
-        _rawNew[:, :, -1] = _oni.reshape(-1, 1)
-        _raw = _rawNew.copy()
+        _rawNew[:, :, :-1] = all_features.copy()
+        # XXX: don't have ONI feature for now, so just set it to 0
+        _rawNew[:, :, -1] = 0.0  # _oni.reshape(-1, 1)
+        all_features = _rawNew.copy()
 
         if self.nodeSelection is not None:
-            return _raw[:, self.nodeSelection], _location[self.nodeSelection]
+            return (
+                all_features[:, self.nodeSelection],
+                all_locations[self.nodeSelection],
+            )
         else:
-            return _raw, _location
+            return all_features, all_locations
 
     def _createHistFT(self):
         _rawData, _location = self._constructRawData()
