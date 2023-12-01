@@ -1,4 +1,5 @@
 from glob import glob
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -12,6 +13,8 @@ from torch_geometric.data import Data
 path = "./datapackage/"
 filePath = glob(path + "*.mat")
 filePath.sort()
+
+DATA_ROOT = Path(__file__).parent.parent / "datapackage"
 
 
 # Util functions
@@ -135,7 +138,7 @@ class FTGenerator(object):
         _raw = _rawNew.copy()
 
         # Adding ONI as a global influence feature
-        _oni = loadONI("../../Data/ONI.mat")
+        _oni = loadONI(DATA_ROOT / "ONI.mat")
         _nSteps, _nNodes, _nFeatures = _raw.shape
         _rawNew = np.zeros((_nSteps, _nNodes, _nFeatures + 1))
         _rawNew[:, :, :-1] = _raw.copy()

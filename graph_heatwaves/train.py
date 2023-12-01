@@ -2,8 +2,6 @@ import os
 import pickle
 import time
 
-import data
-import network
 import numpy as np
 import torch
 import torch.nn as nn
@@ -13,6 +11,8 @@ from absl import app, flags
 
 # from sklearn.utils import shuffle
 from torch_geometric.loader import DataLoader as batchLoader
+
+from . import data, network
 
 flags.DEFINE_integer("num_steps", int(1000), help="Number of steps of training.")
 flags.DEFINE_string("AF", "PReLUMulti", help="Choice of activation function.")

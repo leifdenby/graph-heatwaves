@@ -6,7 +6,13 @@ description = ""
 authors = [
     {name = "leifdenby", email = "leif@denby.eu"},
 ]
-dependencies = []
+dependencies = [
+    "torch-geometric>=2.4.0",
+    "torch>=2.1.1",
+    "ipython>=8.18.1",
+    "matplotlib>=3.8.2",
+    "absl-py>=2.0.0",
+]
 requires-python = ">=3.9"
 license = {text = "MIT"}
 

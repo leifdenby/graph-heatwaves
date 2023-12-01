@@ -1,2 +1,3 @@
 datapackage/
 .pdm-python
+__pycache__/
